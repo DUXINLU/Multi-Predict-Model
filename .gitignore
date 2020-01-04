@@ -1,0 +1,7 @@
+.idea
+.DS_STORE
+.doc*
+.pdf
+/fig
+201910.txt
+model

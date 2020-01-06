@@ -1,0 +1,5 @@
+data_gen = TimeseriesGenerator(data, targets,	#输入数据、目标值
+                               length=10, 	#选取多长的时间作为一次输入
+                               sampling_rate=1,	#每组中，隔几步取一个输入
+                               stride=1,	#每组之间的开头，隔几个
+                               batch_size=2)	#一组有多少个

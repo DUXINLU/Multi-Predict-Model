@@ -61,9 +61,8 @@ def DHMXA_porc():
 
 def EEMD_proc():
     time, x, y = Get_data()
-    x = x[:, :2].T
 
-    tMin, tMax = 0, x.shape[1]
+    tMin, tMax = 0, x.shape[0]
     T = np.linspace(tMin, tMax, tMax)
 
     eemd = EEMD()
@@ -73,33 +72,10 @@ def EEMD_proc():
     E_IMFs = []
     print("Getting EIMFS...")
 
-    for i in x:
-        E_IMFs.append(eemd.eemd(i, T, max_imf=10))
-        # imfNo = E_IMFs.shape[0]
-        # E_IMFs = np.array(E_IMFs)
-        # print(E_IMFs.shape)
-    E_IMFs = np.array(E_IMFs)
-    for i in E_IMFs:
-        print(i.shape)
+    for i in range(x.shape[1]):
+        E_IMFs.append(eemd.eemd(i, T))
+
     return E_IMFs, y
-
-    '''
-    c = np.floor(np.sqrt(imfNo + 1))
-    r = np.ceil((imfNo + 1) / c)
-
-    plt.ioff()
-    plt.subplot(r, c, 1)
-    plt.plot(T, x, 'r')
-    plt.xlim((tMin, tMax))
-    plt.title("Original signal")
-
-    for num in range(imfNo):
-        plt.subplot(r, c, num + 2)
-        plt.plot(T, E_IMFs[num], 'g')
-        plt.xlim((tMin, tMax))
-        plt.title("Imf " + str(num + 1))
-    plt.show()
-    '''
 
 
 def MLR_proc():

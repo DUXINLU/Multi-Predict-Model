@@ -63,7 +63,8 @@ def Get_info():
 
 def EEMD_proc():
     time, x, y = Get_data()
-    x = x[:200, :]
+    x = x[:500, :]
+    y = y[:500]
     res = []
 
     tMin, tMax = 0, x.shape[0]
@@ -84,9 +85,11 @@ def EEMD_proc():
         # return E_IMFs, y.T
         break
 
-    # res = np.array(res)
-    # print(res)
+    # res = np.array(res)  # 这个地方不能直接转 要用np.concatate
 
+    return res[0], y
+
+    '''
     c = np.floor(np.sqrt(imfNo + 1))
     r = np.ceil((imfNo + 1) / c)
 
@@ -101,83 +104,44 @@ def EEMD_proc():
         plt.plot(T, E_IMFs[num], 'g')
         plt.xlim((tMin, tMax))
         plt.title("Imf " + str(num + 1))
-    plt.show()
-
-
-def MLR_proc():
-    time, x, y = Get_data()
-    # print(x[:, 0].shape, x[:, 4:7].shape)
-    # 选0、4、5、6维用做线性回归的输入
-    # x = np.hstack((x[:, 0].reshape((x.shape[0], 1)), x[:, 4:7]))
-
-    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.01, random_state=0)
-    print('X_train.shape={}\n y_train.shape ={}\n X_test.shape={}\n,  y_test.shape={}'.format(X_train.shape,
-                                                                                              y_train.shape,
-                                                                                              X_test.shape,
-                                                                                              y_test.shape))
-    linreg = LinearRegression()
-    model = linreg.fit(X_train, y_train)
-    # print(model)
-    # 训练后模型截距
-    # print(linreg.intercept_)
-    # 训练后模型权重（特征个数无变化）
-    # print(linreg.coef_)
-
-    # 输出RMSE输出、图表显示
-    y_pred = linreg.predict(X_test)
-    print(y_pred)  # 10个变量的预测结果
-
-    sum_mean = 0
-    for i in range(len(y_pred)):
-        sum_mean += (y_pred[i] - y_test[i]) ** 2
-    sum_erro = np.sqrt(sum_mean / len(y_test))  # 这个是你测试级的数量
-    # calculate RMSE by hand
-    print("RMSE", sum_erro)
-    # 做ROC曲线
-    plt.figure()
-    plt.plot(range(len(y_pred)), y_pred, 'b', label="predict")
-    plt.plot(range(len(y_pred)), y_test, 'r', label="test")
-    plt.legend(loc="upper right")  # 显示图中的标签
-    # plt.savefig("fig/MLR_result.jpg")
-    plt.show()
+    plt.show()'''
 
 
 def LSTM_proc():
     E_IMFs, y = EEMD_proc()
     E_IMFs = E_IMFs.T  # 4w+*17
     print(E_IMFs.shape, y.shape)
-    X_train = E_IMFs[:int(-44640 / 31), :]
-    X_test = E_IMFs[int(-44640 / 31):, :]
-    y_train = y[:int(-44640 / 31)]
-    y_test = y[int(-44640 / 31):]
+    X_train = E_IMFs[:int(-500 / 10), :]
+    X_test = E_IMFs[int(-500 / 10):, :]
+    y_train = y[:int(-500 / 10)]
+    y_test = y[int(-500 / 10):]
 
-    X_train = X_train.reshape((X_train.shape[0] / 10, 10, int(X_train.shape[1])))
-    X_test = X_test.reshape((X_test.shape[0] / 10, 10, int(X_test.shape[1])))
+    X_train = X_train.reshape((X_train.shape[0], 1, int(X_train.shape[1])))
+    X_test = X_test.reshape((X_test.shape[0], 1, int(X_test.shape[1])))
 
     print('X_train.shape={}\n y_train.shape ={}\n X_test.shape={}\n,  y_test.shape={}'.format(X_train.shape,
                                                                                               y_train.shape,
                                                                                               X_test.shape,
                                                                                               y_test.shape))
-
+    '''
     model = Sequential()
     model.add(LSTM(256, input_shape=(X_train.shape[1], X_train.shape[2]), activation='relu'))
     model.add(Dense(1))
     model.compile(loss='mae', optimizer='adam')
-    history = model.fit(X_train, y_train, epochs=1000, batch_size=256, validation_data=(X_test, y_test), verbose=1,
+    history = model.fit(X_train, y_train, epochs=200, batch_size=256, validation_data=(X_test, y_test), verbose=1,
                         shuffle=False)
-    model.save('model')
+    model.save('model')'''
 
-    # model = load_model('model')
+    model = load_model('model')
 
     # make a prediction
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    yhat = model.predict(X_test)
-    print(yhat.shape)
-    print(y.shape)
+    y_predict = model.predict(X_test)
+    print(y_predict.shape)
+    #print(y.shape)
     X_test = X_test.reshape((X_test.shape[0], X_test.shape[2]))
-    print(X_test.shape)
+    #print(X_test.shape)
 
-    y1 = yhat
+    y1 = y_predict
     y2 = y_test
     plt.plot(range(y_test.shape[0]), y1, label='Frist line')
     plt.plot(range(y_test.shape[0]), y2, label='second line')
@@ -213,4 +177,4 @@ def Show_as_fig():
 
 
 if __name__ == "__main__":
-    EEMD_proc()
+    LSTM_proc()

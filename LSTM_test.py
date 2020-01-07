@@ -7,13 +7,20 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split  # 这里是引用了交叉验证
 from sklearn.linear_model import LinearRegression  # 线性回归
-from keras.layers import LSTM, Dense
+from keras.preprocessing.sequence import TimeseriesGenerator
 from keras.models import Sequential
+from keras.layers import LSTM, Dense
 from keras.models import load_model
-from math import sqrt
-from numpy import concatenate
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler
-from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
+
+
+def Show_as_fig():
+    time, x, y = Get_data()
+    x = PCA_proc(x)
+
+    print(x.dtype, y.dtype)
+    # np.savetxt("y.txt", y, delimiter=',', fmt="%s")
+    plt.plot(range(len(time[:, 4])), x[:, 9])
+    plt.show()
 
 
 def Get_data():
@@ -61,11 +68,15 @@ def Get_info():
     return info
 
 
+def DHMXA_porc():
+    pass
+
+
 def EEMD_proc():
     time, x, y = Get_data()
-    x = x[:500, :]
-    y = y[:500]
-    res = []
+
+    x = x[:1000, :]
+    y = y[10:1010]
 
     tMin, tMax = 0, x.shape[0]
     T = np.linspace(tMin, tMax, tMax)
@@ -74,107 +85,125 @@ def EEMD_proc():
     eemd.trials = 50
     eemd.noise_seed(100)
 
+    E_IMFs = []
+    print("Getting EIMFS...")
+
+    # E_IMFs = np.loadtxt("E_IMFs")
+
     for i in range(x.shape[1]):
-        print("Getting EIMFS...")
-        E_IMFs = eemd.eemd(x[:, i], T)
-        res.append(E_IMFs)
-        imfNo = E_IMFs.shape[0]
-        print(E_IMFs.shape)
-        # E_IMFs = np.array(E_IMFs)
-        # print(E_IMFs.shape)
-        # return E_IMFs, y.T
-        break
+        _ = eemd.eemd(x[:, i], T)
+        E_IMFs.append(_)
+        print(_.shape)
 
-    # res = np.array(res)  # 这个地方不能直接转 要用np.concatate
+    E_IMFs = np.concatenate(E_IMFs)
+    print(E_IMFs.shape)
 
-    return res[0], y
+    return E_IMFs, y
 
-    '''
-    c = np.floor(np.sqrt(imfNo + 1))
-    r = np.ceil((imfNo + 1) / c)
 
-    plt.ioff()
-    plt.subplot(r, c, 1)
-    plt.plot(T, x, 'r')
-    plt.xlim((tMin, tMax))
-    plt.title("Original signal")
+def MLR_proc():
+    _ = 5
+    predict_peroid = 10
+    time, x, y = Get_data()
+    x = x[:-predict_peroid, :]
+    y = y[predict_peroid:]
+    X_train = x[:int(-x.shape[0] / _), :]
+    X_test = x[int(-x.shape[0] / _):, :]
+    y_train = y[:int(-x.shape[0] / _)]
+    y_test = y[int(-x.shape[0] / _):]
 
-    for num in range(imfNo):
-        plt.subplot(r, c, num + 2)
-        plt.plot(T, E_IMFs[num], 'g')
-        plt.xlim((tMin, tMax))
-        plt.title("Imf " + str(num + 1))
-    plt.show()'''
+    linreg = LinearRegression()
+    model = linreg.fit(X_train, y_train)
+    # print(model)
+    # 训练后模型截距
+    # print(linreg.intercept_)
+    # 训练后模型权重（特征个数无变化）
+    # print(linreg.coef_)
+
+    # 输出RMSE输出、图表显示
+    y_pred = linreg.predict(X_test)
+    print(y_pred)  # 10个变量的预测结果
+
+    sum_mean = 0
+    for i in range(len(y_pred)):
+        sum_mean += (y_pred[i] - y_test[i]) ** 2
+    sum_erro = np.sqrt(sum_mean / len(y_test))  # 这个是你测试级的数量
+    # calculate RMSE by hand
+    print("RMSE", sum_erro)
+    # 做ROC曲线
+    plt.figure()
+    plt.plot(range(len(y_pred)), y_pred, 'b', label="predict")
+    plt.plot(range(len(y_pred)), y_test, 'r', label="test")
+    plt.legend(loc="upper right")  # 显示图中的标签
+    # plt.savefig("fig/MLR_result.jpg")
+    plt.show()
 
 
 def LSTM_proc():
-    E_IMFs, y = EEMD_proc()
-    E_IMFs = E_IMFs.T  # 4w+*17
-    print(E_IMFs.shape, y.shape)
-    X_train = E_IMFs[:int(-500 / 10), :]
-    X_test = E_IMFs[int(-500 / 10):, :]
-    y_train = y[:int(-500 / 10)]
-    y_test = y[int(-500 / 10):]
+    _ = 5  # test/all
 
-    X_train = X_train.reshape((X_train.shape[0], 1, int(X_train.shape[1])))
-    X_test = X_test.reshape((X_test.shape[0], 1, int(X_test.shape[1])))
+    # using EEMD
+    # E_IMFs, y = EEMD_proc()
+    # E_IMFs = E_IMFs[0].T
+    # X_train = E_IMFs[:int(-E_IMFs.shape[0] / _), :]
+    # X_test = E_IMFs[int(-E_IMFs.shape[0] / _):, :]
+    # y_train = y[:int(-E_IMFs.shape[0] / _)]
+    # y_test = y[int(-E_IMFs.shape[0] / _):]
 
-    print('X_train.shape={}\n y_train.shape ={}\n X_test.shape={}\n,  y_test.shape={}'.format(X_train.shape,
-                                                                                              y_train.shape,
-                                                                                              X_test.shape,
-                                                                                              y_test.shape))
-    '''
+    # not using EEMD
+    time, x, y = Get_data()
+    x = x[:-10, :]
+    y = y[10:]
+    X_train = x[:int(-x.shape[0] / _), :]
+    X_test = x[int(-x.shape[0] / _):, :]
+    y_train = y[:int(-x.shape[0] / _)]
+    y_test = y[int(-x.shape[0] / _):]
+
+    print('X_train{}\ny_train{}\nX_test{}\ny_test{}'.format(X_train.shape, y_train.shape, X_test.shape, y_test.shape))
+
+    data_gen = TimeseriesGenerator(X_train, y_train, length=10, batch_size=y_train.shape[0])
+    X = []
+    y = []
+    for i in zip(*data_gen[0]):
+        x_, y_ = i
+        X.append(x_)
+        y.append(y_)
+    X = np.array(X)
+    y = np.array(y)
+
+    # plt.plot(range(y.shape[0]), y, label='y')
+    # plt.show()
+
     model = Sequential()
-    model.add(LSTM(256, input_shape=(X_train.shape[1], X_train.shape[2]), activation='relu'))
+    model.add(LSTM(128, input_shape=(X.shape[1], X.shape[2]), activation='relu'))
     model.add(Dense(1))
     model.compile(loss='mae', optimizer='adam')
-    history = model.fit(X_train, y_train, epochs=200, batch_size=256, validation_data=(X_test, y_test), verbose=1,
+    history = model.fit(X, y, epochs=300, batch_size=128, validation_data=(X, y), verbose=1,
                         shuffle=False)
-    model.save('model')'''
+    model.save('model')
 
-    model = load_model('model')
+    # model = load_model('model')
+
+    data_gen = TimeseriesGenerator(X_test, y_test, length=10, batch_size=y_test.shape[0])
+
+    X = []
+    y = []
+    for i in zip(*data_gen[0]):
+        x_, y_ = i
+        X.append(x_)
+        y.append(y_)
+    X = np.array(X)
+    y = np.array(y)
 
     # make a prediction
-    y_predict = model.predict(X_test)
-    print(y_predict.shape)
-    #print(y.shape)
-    X_test = X_test.reshape((X_test.shape[0], X_test.shape[2]))
-    #print(X_test.shape)
-
-    y1 = y_predict
-    y2 = y_test
-    plt.plot(range(y_test.shape[0]), y1, label='Frist line')
-    plt.plot(range(y_test.shape[0]), y2, label='second line')
-    plt.xlabel('Plot Number')
-    plt.ylabel('Important var')
-    plt.title('Interesting Graph\nCheck it out')
+    y_predict = model.predict(X)
+    plt.plot(range(y.shape[0]), y, label='Test')
+    plt.plot(range(y.shape[0]), y_predict, label='Predict')
+    plt.xlabel('Time')
+    plt.ylabel('.')
     plt.legend()
-    plt.show()
-    '''
-    # invert scaling for forecast
-    inv_yhat = concatenate((yhat, X_test[:, 1:]), axis=1)
-    inv_yhat = scaler.inverse_transform(inv_yhat)
-    inv_yhat = inv_yhat[:, 0]
-    # invert scaling for actual
-    inv_y = scaler.inverse_transform(X_test)
-    inv_y = inv_y[:, 0]
-    # calculate RMSE
-    rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
-    r2 = r2_score(inv_y, inv_yhat)
-    mae = mean_absolute_error(inv_y, inv_yhat)
-    print('RMSE: %.3f R2: %.3f MAE: %.3f' % (rmse, r2, mae))
-    '''
-
-
-def Show_as_fig():
-    time, x, y = Get_data()
-    x = PCA_proc(x)
-
-    print(x.dtype, y.dtype)
-    # np.savetxt("y.txt", y, delimiter=',', fmt="%s")
-    plt.plot(range(len(time[:, 4])), x[:, 9])
     plt.show()
 
 
 if __name__ == "__main__":
-    LSTM_proc()
+    MLR_proc()

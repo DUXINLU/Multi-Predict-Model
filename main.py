@@ -172,16 +172,16 @@ def LSTM_proc():
 
     # plt.plot(range(y.shape[0]), y, label='y')
     # plt.show()
-    '''
+
     model = Sequential()
     model.add(LSTM(128, input_shape=(X.shape[1], X.shape[2]), activation='relu'))
     model.add(Dense(1))
     model.compile(loss='mae', optimizer='adam')
-    history = model.fit(X, y, epochs=300, batch_size=128, validation_data=(X, y), verbose=1,
+    history = model.fit(X, y, epochs=1000, batch_size=128, validation_data=(X, y), verbose=1,
                         shuffle=False)
     model.save('model_LSTM')
-    '''
-    model = load_model('model')
+
+    # model = load_model('model')
 
     data_gen = TimeseriesGenerator(X_test, y_test, length=10, batch_size=y_test.shape[0])
 
@@ -205,4 +205,4 @@ def LSTM_proc():
 
 
 if __name__ == "__main__":
-    MLR_proc()
+    LSTM_proc()

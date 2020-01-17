@@ -104,23 +104,25 @@ def EEMD_proc():
 
 
 def MLR_proc():
-    _ = 5
+    _ = 15
     predict_peroid = 10
     time, x, y = Get_data()
-    x = x[:-predict_peroid, :]
-    y = y[predict_peroid:]
+    # x = x[:-predict_peroid, :]
+    # y = y[predict_peroid:]
     X_train = x[:int(-x.shape[0] / _), :]
     X_test = x[int(-x.shape[0] / _):, :]
     y_train = y[:int(-x.shape[0] / _)]
     y_test = y[int(-x.shape[0] / _):]
 
+    '''
     model = Sequential()
     model.add(Dense(1, input_dim=x.shape[1]))
     model.compile(optimizer='adam', loss='mse')
     print("Fitting...")
-    model.fit(X_train, y_train, epochs=300, verbose=1)
+    model.fit(X_train, y_train, epochs=200, verbose=1)
     model.save("model_MLR")
-
+    '''
+    model = load_model("model_MLR")
     y_predict = model.predict(X_test)
 
     '''RMSE
@@ -139,7 +141,7 @@ def MLR_proc():
 
 
 def LSTM_proc():
-    _ = 5  # test/all
+    _ = 15  # test/all
 
     # using EEMD
     # E_IMFs, y = EEMD_proc()
@@ -181,9 +183,9 @@ def LSTM_proc():
                         shuffle=False)
     model.save('model_LSTM')
 
-    # model = load_model('model')
+    # model = load_model('model_LSTM')
 
-    data_gen = TimeseriesGenerator(X_test, y_test, length=10, batch_size=y_test.shape[0])
+    data_gen = TimeseriesGenerator(X_test, y_test, length=300, batch_size=y_test.shape[0])
 
     X = []
     y = []
@@ -205,4 +207,4 @@ def LSTM_proc():
 
 
 if __name__ == "__main__":
-    LSTM_proc()
+    MLR_proc()
